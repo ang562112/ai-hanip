@@ -268,13 +268,42 @@ def generate_content(content_type: str, topic: str = "", content: str = "", huma
             posts = parsed["posts"]
             if humanize_output:
                 posts = [humanize(p) for p in posts]
+            # 마지막 게시물에만 홍보 추가
+            if posts:
+                posts[-1] = add_promo_footer(posts[-1])
             return {"type": content_type, "posts": posts, "raw": raw}
         except Exception as e:
             print(f"⚠️ JSON 파싱 실패: {e}")
             return {"type": content_type, "posts": [raw], "raw": raw}
 
     text = humanize(raw) if humanize_output else raw
+    text = add_promo_footer(text)
     return {"type": content_type, "text": text}
+
+
+PROMO_FOOTER = """
+
+📚 AI 같이 공부하실 분?
+당근 스터디 모임 진행중 → daangn.com/kr/group/927162"""
+
+
+def add_promo_footer(text: str) -> str:
+    """게시물 하단에 당근 스터디 모임 홍보 추가 (300자 이하만)"""
+    # 너무 긴 글에는 추가 안 함 (500자 제한 고려)
+    if len(text) + len(PROMO_FOOTER) > 480:
+        return text
+    # 해시태그 줄 앞에 삽입
+    lines = text.rstrip().split("\n")
+    # 마지막 해시태그 줄 찾기
+    hashtag_idx = None
+    for i in range(len(lines) - 1, -1, -1):
+        if lines[i].strip().startswith("#"):
+            hashtag_idx = i
+            break
+
+    if hashtag_idx is not None:
+        return "\n".join(lines[:hashtag_idx]) + PROMO_FOOTER + "\n\n" + "\n".join(lines[hashtag_idx:])
+    return text + PROMO_FOOTER
 
 
 def generate_weekly_batch(topics: dict) -> list:
