@@ -1,0 +1,6 @@
+config/.env
+prompts/
+_workspace/
+__pycache__/
+*.pyc
+*.pyo

@@ -1,0 +1,135 @@
+{
+  "name": "AI한입 콘텐츠 파이프라인",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "매일 오전 7시 트리거",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 7 * * *" }]
+        }
+      },
+      "position": [100, 300]
+    },
+    {
+      "id": "2",
+      "name": "오늘 콘텐츠 타입 가져오기",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "// 요일별 콘텐츠 타입 자동 배정\nconst schedule = {\n  1: { type: 'daily_tip',   topic: '오늘의 AI 팁' },\n  2: { type: 'thread',      topic: '딥다이브 주제' },\n  3: { type: 'tool_review', topic: 'AI 도구 리뷰' },\n  4: { type: 'daily_tip',   topic: '프롬프트 팁' },\n  5: { type: 'news',        topic: '이번 주 AI 뉴스' },\n  6: { type: 'thread',      topic: '심화 학습' },\n  0: { type: 'quiz',        topic: 'AI 퀴즈' }\n};\nconst day = new Date().getDay();\nreturn [{ json: schedule[day] }];"
+      },
+      "position": [300, 300]
+    },
+    {
+      "id": "3",
+      "name": "Claude API 초안 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "headers": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "body": {
+          "model": "claude-opus-4-5",
+          "max_tokens": 1024,
+          "messages": [{
+            "role": "user",
+            "content": "={{ $json.prompt }}"
+          }]
+        }
+      },
+      "position": [500, 300]
+    },
+    {
+      "id": "4",
+      "name": "Notion 승인큐 저장",
+      "type": "n8n-nodes-base.notion",
+      "parameters": {
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_DATABASE_ID }}",
+        "properties": {
+          "title": "={{ $json.topic }}",
+          "content": "={{ $json.content }}",
+          "status": "pending",
+          "type": "={{ $json.type }}",
+          "created": "={{ $now }}"
+        }
+      },
+      "position": [700, 300]
+    },
+    {
+      "id": "5",
+      "name": "Slack 알림",
+      "type": "n8n-nodes-base.slack",
+      "parameters": {
+        "operation": "postMessage",
+        "channel": "#ai-hanip-queue",
+        "text": "👀 새 콘텐츠 초안이 생성됐어요!\n타입: {{ $json.type }}\n주제: {{ $json.topic }}\n\nNotion에서 확인 후 승인해주세요 ✅"
+      },
+      "position": [700, 450]
+    },
+    {
+      "id": "6",
+      "name": "승인 웹훅 대기",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "approve-post",
+        "method": "POST",
+        "comment": "Notion에서 승인 시 이 웹훅 호출"
+      },
+      "position": [900, 300]
+    },
+    {
+      "id": "7",
+      "name": "Threads API 게시",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.threads.net/v1.0/{{ $env.THREADS_USER_ID }}/threads",
+        "queryParameters": {
+          "parameters": [
+            { "name": "media_type", "value": "TEXT" },
+            { "name": "text", "value": "={{ $json.content }}" },
+            { "name": "access_token", "value": "={{ $env.THREADS_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "position": [1100, 300]
+    },
+    {
+      "id": "8",
+      "name": "Threads 발행 완료",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.threads.net/v1.0/{{ $env.THREADS_USER_ID }}/threads_publish",
+        "queryParameters": {
+          "parameters": [
+            { "name": "creation_id", "value": "={{ $json.id }}" },
+            { "name": "access_token", "value": "={{ $env.THREADS_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "position": [1300, 300]
+    }
+  ],
+  "connections": {
+    "매일 오전 7시 트리거": { "main": [[{ "node": "오늘 콘텐츠 타입 가져오기" }]] },
+    "오늘 콘텐츠 타입 가져오기": { "main": [[{ "node": "Claude API 초안 생성" }]] },
+    "Claude API 초안 생성": {
+      "main": [[
+        { "node": "Notion 승인큐 저장" },
+        { "node": "Slack 알림" }
+      ]]
+    },
+    "승인 웹훅 대기": { "main": [[{ "node": "Threads API 게시" }]] },
+    "Threads API 게시": { "main": [[{ "node": "Threads 발행 완료" }]] }
+  }
+}
