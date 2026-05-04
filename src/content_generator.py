@@ -233,7 +233,7 @@ def humanize(text: str) -> str:
     """AI 티 제거 — humanize-korean 룰 적용"""
     print(f"✨ humanize 처리 중...")
     msg = client.messages.create(
-        model="claude-opus-4-5",
+        model="claude-opus-4-7",
         max_tokens=2048,
         messages=[{"role": "user", "content": HUMANIZE_PROMPT.format(text=text)}]
     )
@@ -253,7 +253,7 @@ def generate_content(content_type: str, topic: str = "", content: str = "", huma
     print(f"🤖 Claude에게 [{content_type}] 초안 요청 중...")
 
     message = client.messages.create(
-        model="claude-opus-4-5",
+        model="claude-opus-4-7",
         max_tokens=2048,
         messages=[{"role": "user", "content": prompt}]
     )

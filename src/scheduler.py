@@ -21,9 +21,9 @@ src = Path(__file__).parent
 sys.path.insert(0, str(src))
 
 from content_generator import generate_content, preview
-from ayrshare_publisher import AyrsharePublisher
+from threads_direct import ThreadsDirect
 
-pub = AyrsharePublisher()
+pub = ThreadsDirect()
 
 # ─────────────────────────────────────────────────
 # 주간 콘텐츠 플랜
@@ -32,32 +32,32 @@ pub = AyrsharePublisher()
 # ─────────────────────────────────────────────────
 WEEKLY_PLAN = {
     0: [  # 월
-        ("daily_tip",    "ChatGPT 프롬프트 역할 부여하기"),
-        ("glossary",     "토큰(Token)이 뭔지 모르면 GPT 요금 폭탄 맞는다"),
+        ("daily_tip",    "AI에게 단계별로 생각하게 하는 법 (Let's think step by step)"),
+        ("glossary",     "LLM(대규모 언어 모델)이 뭔가요"),
     ],
     1: [  # 화
-        ("thread",       "AI 처음 쓰는 사람이 꼭 알아야 할 것 5가지"),
-        ("mistake",      "ChatGPT한테 질문 잘못하는 비기너 실수"),
+        ("tool_review",  "Notion AI 실제 써보니 — 장단점 솔직 후기"),
+        ("mistake",      "AI 답변 그대로 믿고 팩트체크 안 하는 실수"),
     ],
     2: [  # 수
-        ("tool_review",  "Claude vs ChatGPT — 비기너는 뭘 써야 하나"),
-        ("daily_tip",    "AI에게 예시를 주면 답변이 달라지는 이유"),
+        ("thread",       "AI로 이메일 작성 시간 10분에서 2분 만든 방법"),
+        ("quiz",         "이 문장 AI가 쓴 걸까 사람이 쓴 걸까"),
     ],
     3: [  # 목
-        ("glossary",     "프롬프트(Prompt)가 뭔지 아직도 모른다면"),
-        ("mistake",      "AI 답변 복붙하다 망한 사람들의 공통점"),
+        ("daily_tip",    "AI한테 더 자세히 보다 효과적인 말"),
+        ("glossary",     "파인튜닝 vs 프롬프트 엔지니어링 차이"),
     ],
     4: [  # 금
-        ("thread",       "무료 AI 도구 5개 — 비기너 완전 정복"),
-        ("quiz",         "AI 기초 상식"),
+        ("tool_review",  "Gamma AI로 발표자료 5분 만들기"),
+        ("thread",       "대학생이 AI로 레포트 윤리적으로 활용하는 법"),
     ],
     5: [  # 토
-        ("tool_review",  "Perplexity — 구글 대신 쓰는 AI 검색"),
-        ("daily_tip",    "AI로 업무 시간 줄이는 현실적인 방법"),
+        ("mistake",      "AI한테 한 번에 너무 많이 요청하는 실수"),
+        ("daily_tip",    "AI로 영어 공부 효율 2배 올리는 법"),
     ],
     6: [  # 일
-        ("glossary",     "할루시네이션 — AI가 거짓말하는 이유"),
-        ("mistake",      "AI 쓴다고 다 잘하는 거 아닌 이유"),
+        ("quiz",         "AI 용어 OX 퀴즈"),
+        ("glossary",     "에이전트(Agent) — AI의 다음 진화"),
     ],
 }
 
