@@ -21,9 +21,9 @@ src = Path(__file__).parent
 sys.path.insert(0, str(src))
 
 from content_generator import generate_content, preview
-from ayrshare_publisher import AyrsharePublisher
+from threads_direct import ThreadsDirect
 
-pub = AyrsharePublisher()
+pub = ThreadsDirect()
 
 # ─────────────────────────────────────────────────
 # 주간 콘텐츠 플랜
