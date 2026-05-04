@@ -297,11 +297,42 @@ HASHTAG_POOLS = {
 }
 
 
+import re
+
+def strip_markdown(text: str) -> str:
+    """Threads는 마크다운을 렌더링하지 않으므로 모두 제거"""
+    # **bold** / __bold__ → bold
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    # *italic* → italic (단, 별표 단독 줄은 보존 안 함)
+    text = re.sub(r"(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)", r"\1", text)
+    # _italic_ → italic
+    text = re.sub(r"(?<!_)_(?!_)([^_\n]+?)(?<!_)_(?!_)", r"\1", text)
+    # `code` → code
+    text = re.sub(r"`([^`]+?)`", r"\1", text)
+    # ### heading / ## heading / # heading → heading
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    # [text](url) → text (url)
+    text = re.sub(r"\[([^\]]+?)\]\(([^)]+?)\)", r"\1 (\2)", text)
+    # > blockquote → blockquote
+    text = re.sub(r"^>\s+", "", text, flags=re.MULTILINE)
+    # --- (수평선) → 빈 줄로
+    text = re.sub(r"^-{3,}$", "", text, flags=re.MULTILINE)
+    # 남은 ** 잔재 제거
+    text = text.replace("**", "")
+    # 연속 빈 줄 정리
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
 def add_promo_footer(text: str, content_type: str = "daily_tip") -> str:
     """
     게시물 하단에 당근 홍보 + 최적 해시태그 자동 삽입.
-    텍스트 길이에 관계없이 항상 추가.
+    마크다운 제거 + 텍스트 길이에 관계없이 항상 추가.
     """
+    # 0. 마크다운 제거 (** ## ` 등)
+    text = strip_markdown(text)
+
     # 1. 기존 해시태그 라인 제거 (Claude가 만든 것)
     lines = text.rstrip().split("\n")
     cleaned = []
