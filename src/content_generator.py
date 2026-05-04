@@ -268,42 +268,57 @@ def generate_content(content_type: str, topic: str = "", content: str = "", huma
             posts = parsed["posts"]
             if humanize_output:
                 posts = [humanize(p) for p in posts]
-            # 마지막 게시물에만 홍보 추가
+            # 마지막 게시물에만 홍보 + 해시태그 추가
             if posts:
-                posts[-1] = add_promo_footer(posts[-1])
+                posts[-1] = add_promo_footer(posts[-1], content_type)
             return {"type": content_type, "posts": posts, "raw": raw}
         except Exception as e:
             print(f"⚠️ JSON 파싱 실패: {e}")
             return {"type": content_type, "posts": [raw], "raw": raw}
 
     text = humanize(raw) if humanize_output else raw
-    text = add_promo_footer(text)
+    text = add_promo_footer(text, content_type)
     return {"type": content_type, "text": text}
 
 
 PROMO_FOOTER = """
+📚 AI 같이 공부할 사람?
+당근 모임 → daangn.com/kr/group/927162"""
 
-📚 AI 같이 공부하실 분?
-당근 스터디 모임 진행중 → daangn.com/kr/group/927162"""
+# 해시태그 풀 — 벤치마킹 기반 (대형+중형+소형 조합)
+HASHTAG_POOLS = {
+    "daily_tip":   ["#ChatGPT", "#Claude", "#AI팁", "#AI공부", "#AI한입", "#프롬프트"],
+    "thread":      ["#AI", "#ChatGPT", "#Claude", "#AI공부", "#AI한입", "#AI입문"],
+    "news":        ["#AI뉴스", "#ChatGPT", "#Claude", "#AI", "#AI한입", "#테크뉴스"],
+    "quiz":        ["#AI퀴즈", "#ChatGPT", "#AI공부", "#AI한입", "#AI입문"],
+    "tool_review": ["#AI도구", "#ChatGPT", "#Claude", "#생산성", "#AI한입", "#AI추천"],
+    "glossary":    ["#AI용어", "#ChatGPT", "#Claude", "#AI공부", "#AI한입", "#AI입문"],
+    "mistake":     ["#ChatGPT", "#Claude", "#AI팁", "#AI공부", "#AI한입", "#AI주의"],
+}
 
 
-def add_promo_footer(text: str) -> str:
-    """게시물 하단에 당근 스터디 모임 홍보 추가 (300자 이하만)"""
-    # 너무 긴 글에는 추가 안 함 (500자 제한 고려)
-    if len(text) + len(PROMO_FOOTER) > 480:
-        return text
-    # 해시태그 줄 앞에 삽입
+def add_promo_footer(text: str, content_type: str = "daily_tip") -> str:
+    """
+    게시물 하단에 당근 홍보 + 최적 해시태그 자동 삽입.
+    텍스트 길이에 관계없이 항상 추가.
+    """
+    # 1. 기존 해시태그 라인 제거 (Claude가 만든 것)
     lines = text.rstrip().split("\n")
-    # 마지막 해시태그 줄 찾기
-    hashtag_idx = None
-    for i in range(len(lines) - 1, -1, -1):
-        if lines[i].strip().startswith("#"):
-            hashtag_idx = i
-            break
+    cleaned = []
+    for line in lines:
+        s = line.strip()
+        # 해시태그만 있는 라인은 제거
+        if s and all(w.startswith("#") for w in s.split() if w):
+            continue
+        cleaned.append(line)
 
-    if hashtag_idx is not None:
-        return "\n".join(lines[:hashtag_idx]) + PROMO_FOOTER + "\n\n" + "\n".join(lines[hashtag_idx:])
-    return text + PROMO_FOOTER
+    body = "\n".join(cleaned).rstrip()
+
+    # 2. 해시태그 6개 선택 (벤치마킹 기반)
+    tags = " ".join(HASHTAG_POOLS.get(content_type, HASHTAG_POOLS["daily_tip"])[:6])
+
+    # 3. 조합: 본문 + 홍보 + 해시태그
+    return f"{body}\n{PROMO_FOOTER}\n\n{tags}"
 
 
 def generate_weekly_batch(topics: dict) -> list:
